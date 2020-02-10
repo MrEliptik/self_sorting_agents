@@ -3,8 +3,8 @@ from random import randrange
 import numpy as np
 import time
 
-AGENT_NB = 10
-TICKS_SEC = 1
+AGENT_NB = 50
+TICKS_SEC = 60
 
 def main():
     ticks = 0
@@ -41,13 +41,13 @@ def main():
 
                 agent.update(neigbors)
 
-            # Reorganize agent in the array based
-            # on their position to better visualise
-            new_pos_agents = AGENT_NB*[None]
-            for (i, agent) in enumerate(agents):
-                new_pos_agents[agent.position] = agent
-
-            agents = new_pos_agents.copy()
+                # Reorganize agent in the array based
+                # on their position 
+                agents[agent.position] = agent
+                if neigbors[0] != None:
+                    agents[neigbors[0].position] = neigbors[0]
+                elif neigbors[1] != None:
+                    agents[neigbors[1].position] = neigbors[1]
 
             print_agents(agents)
 
@@ -55,7 +55,7 @@ def main():
 
             # Check if values are correctly organized
             if np.array_equal([agent.value for agent in agents], wanted_result):
-                print("ORDER IS BACK!!")
+                print("\nORDER IS BACK!!")
                 break
             ticks += 1
 
