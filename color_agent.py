@@ -10,22 +10,26 @@ import time
 
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
-BLUE = 0, 0, 255
-GREEN = 0, 255, 0
-RED = 255, 0, 0
-size = width, height = 640, 640
-ROWS = 9
-COLS = 9
+BLUE = 52, 116, 235
+GREEN = 52, 235, 137
+RED = 235, 52, 91
+size = width, height = 1024, 1024
+ROWS = 20
+COLS = 20
 cell_width = (width/COLS)
 cell_height = (height/ROWS)
 font_size = 60
 COLORS = [BLUE, GREEN, RED]
+
+AGENT_NB = ROWS*COLS
+TICKS_SEC = 60
 
 
 class GUI():
 
     def __init__(self):
         pygame.init()
+        pygame.font.init()
         self.screen = pygame.display.set_mode(size)
         self.screen.fill(WHITE)
 
@@ -51,12 +55,19 @@ class GUI():
     def drawRect(self, cell, color, refresh=False):
         pygame.draw.rect(self.screen, color, 
             pygame.Rect(
-                int(cell_width*cell[0]), 
                 int(cell_width*cell[1]), 
+                int(cell_height*cell[0]), 
                 int(cell_width), 
                 int(cell_height)), 0)
         if refresh:
             self.refresh()
+
+    def drawID(self, cell, id):
+        myfont = pygame.font.SysFont("monospace", 20)
+
+        # render text
+        label = myfont.render(id, 50, (0,0,0))
+        self.screen.blit(label, (cell_width*cell[1], cell_height*cell[0]))
 
     def playerInput(self):
         running = True
@@ -65,8 +76,7 @@ class GUI():
                 # handle MOUSEBUTTONUP
                 if event.type == pygame.MOUSEBUTTONUP:
                     pos = pygame.mouse.get_pos()
-                    cell = self.getCell(pos)
-                    return cell[0], cell[1]
+                    return
                 if event.type == pygame.QUIT:
                     running = False
                 self.refresh()
@@ -111,15 +121,16 @@ class GUI():
             if event.type == pygame.QUIT:
                 running = False
 
-            self.refresh()
+        self.refresh()
 
     def refresh(self):
         pygame.display.update()
 
 class Agent:
-    def __init__(self, color, position):
+    def __init__(self, color, position, id):
         self.color = color
         self.position = position
+        self.id = id
 
     def __str__(self):
         return 'color: {} position: {}'.format(self.color, self.position)
@@ -154,49 +165,58 @@ def get_random_pairs(numbers):
     random.shuffle(pairs)
     return pairs
 
-def get_neighbors_position(agents, agent):
+def get_neighbors_position(agent):
     pos = agent.position
 
     # left neighbor
-    if pos[0] != 0:
-        left_pos = (pos[0] - 1, pos[1])
+    if pos[1] != 0:
+        left_pos = (pos[0], pos[1] - 1)
     else: left_pos = None
 
     # top neighbor
-    if pos[1] != 0:
-        top_pos = (pos[0], pos[1] - 1)
+    if pos[0] != 0:
+        top_pos = (pos[0] - 1, pos[1])
     else: top_pos = None
 
     # right neighbor
-    if pos[0] != (COLS - 1):
-        right_pos = (pos[0] + 1, pos[1])
+    if pos[1] != (COLS - 1):
+        right_pos = (pos[0], pos[1] + 1)
     else: right_pos = None
 
     # bottom neighbor
-    if pos[0] != (ROWS + 1):
-        bottom_pos = (pos[0], pos[1] + 1)
+    if pos[0] != (ROWS - 1):
+        bottom_pos = (pos[0] + 1, pos[1])
     else: bottom_pos = None
     
     return [left_pos, top_pos, right_pos, bottom_pos]
 
 def get_neighbors(agents, agent):
-
-    positions = get_neighbors_position(agents, agent)
+    positions = get_neighbors_position(agent)
     
     neighbors = []
     for pos in positions:
         if pos != None:
-            neighbors.append(agents[((ROWS-1)*pos[0])+pos[1]])
+            neighbors.append(agents[pos[0]][pos[1]])
         else: neighbors.append(None)
 
     return neighbors
 
 def print_agents(agents):
-    for agent in agents:
-        print(agent)
+    for i in range(ROWS):
+        for j in range(COLS):
+            print(agents[i][j])
 
-AGENT_NB = ROWS*COLS
-TICKS_SEC = 60
+def arange(agents, agent, neighbors):
+    tmp = agents.copy()
+
+    tmp[agent.position[0]][agent.position[1]] = agent
+
+    for neighbor in neighbors:
+        if neighbor != None:
+            tmp[neighbor.position[0]][neighbor.position[1]] = neighbor
+
+    return tmp.copy()
+
 
 def main():
     gui = GUI()
@@ -207,32 +227,52 @@ def main():
 
     # Create X agents with ordonned values
     # and random position
-    agents = AGENT_NB*[None]
+    agents = [[None for i in range(ROWS)] for j in range(COLS)]
 
     for i in range(ROWS):
         for j in range(COLS):
-            agents[(ROWS*i)+j] = Agent(random.choice(COLORS), (i,j))
-
-    # sort in place
-    #agents.sort(key=lambda x: x.position)
+            agents[i][j] = Agent(random.choice(COLORS), (i,j), str((ROWS*i)+j))
 
     print_agents(agents)
 
     # Infinite loop
     try:
         while True:
-            # update agents
-            for (i, agent) in enumerate(agents):
-                # Check if lower-edge of the array
-                neighbors = get_neighbors(agents, agent)
+            print("###### TICK: {} ######".format(ticks))
 
-                agent.update(neighbors)
+            # update agents
+            for i in range(ROWS):
+                for j in range(COLS):   
+                    #print("         AGENT: {}".format((ROWS*i)+j))
+
+                    neighbors = get_neighbors(agents, agents[i][j])
+
+                    agents[i][j].update(neighbors)
+
+                    # sort in place
+                    agents = arange(agents, agents[i][j], neighbors)
+
+                    #print_agents(agents)
+
+                    for m in range(ROWS):
+                        for n in range(COLS):
+                            gui.drawRect(agents[m][n].position, agents[m][n].color)
+                            gui.drawID(agents[m][n].position, agents[m][n].id)
+                    gui.update()
+
+                    #gui.playerInput()
 
             # draw
+            '''
             gui.clearScreen()
-            for agent in agents:
-                gui.drawRect(agent.position, agent.color)
+            for m in range(ROWS):
+                for n in range(COLS):
+                    gui.drawRect(agents[m][n].position, agents[m][n].color)
+                    gui.drawID(agents[m][n].position, agents[m][n].id)
             gui.update()
+            '''
+
+            #gui.playerInput()
             
             ticks += 1
 
