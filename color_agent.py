@@ -1,4 +1,5 @@
-from random import randrange
+import random
+import itertools
 import numpy as np
 import time
 import sys
@@ -18,6 +19,7 @@ COLS = 9
 cell_width = (width/COLS)
 cell_height = (height/ROWS)
 font_size = 60
+COLORS = [BLUE, GREEN, RED]
 
 
 class GUI():
@@ -40,19 +42,19 @@ class GUI():
         # Horizontal lines
         for i in range(1, ROWS):
             pygame.draw.line(
-                self.screen, BLACK, [0, (height/ROWS)*i], [width, ((height/ROWS)*i)], ROWS)
+                self.screen, BLACK, [0, int((height/ROWS)*i)], [width, int((height/ROWS)*i)], ROWS)
         # Vertical lines
         for i in range(1, COLS):
             pygame.draw.line(
-                self.screen, BLACK, [(width/COLS)*i, 0], [((width/COLS)*i), height], COLS)
+                self.screen, BLACK, [int((width/COLS)*i), 0], [int((width/COLS)*i), height], COLS)
 
     def drawRect(self, cell, color, refresh=False):
         pygame.draw.rect(self.screen, color, 
             pygame.Rect(
-                cell_width*cell[0], 
-                cell_width*cell[1], 
-                cell_width, 
-                cell_height), 0)
+                int(cell_width*cell[0]), 
+                int(cell_width*cell[1]), 
+                int(cell_width), 
+                int(cell_height)), 0)
         if refresh:
             self.refresh()
 
@@ -120,7 +122,7 @@ class Agent:
         self.position = position
 
     def __str__(self):
-        return 'color: {} Pos: {}'.format(self.color, self.position)
+        return 'color: {} position: {}'.format(self.color, self.position)
 
     # neighbors[0] left neighbor
     # neighbor[1] top neighbor
@@ -129,23 +131,72 @@ class Agent:
     def update(self, neighbors):
         # Check left first, because we want
         # to sort in ascending order
-        # -1 means there's no neighbor
-        if neighbors[0] != None:
-            if neighbors[0].color > self.color:
-                # swap position
-                neighbors[0].position, self.position = self.position, neighbors[0].position
-        elif neighbors[1] != None:
-            if neighbors[1].color < self.color:
-                # swap position
-                neighbors[1].position, self.position = self.position, neighbors[1].position
-        elif neighbors[2] != None:
-            if neighbors[2].color < self.color:
-                # swap position
-                neighbors[2].position, self.position = self.position, neighbors[1].position
+        # None means there's no neighbor
+        for neighbor in neighbors:
+            # First check if we have a same-color neighbor
+            if neighbor != None:
+                if neighbor.color == self.color:
+                    # same color as a neighbor cell, don't move
+                    return
 
+        # If not the case, swap place with the first non-None neighbor
+        for neighbor in neighbors:
+            if neighbor != None:
+                neighbor.position, self.position = self.position, neighbor.position
+                return
+        
 
-AGENT_NB = 30
-TICKS_SEC = 1
+def get_random_pairs(numbers):
+    # Generate all possible non-repeating pairs
+    pairs = list(itertools.permutations(numbers, 2))
+
+    # Randomly shuffle these pairs
+    random.shuffle(pairs)
+    return pairs
+
+def get_neighbors_position(agents, agent):
+    pos = agent.position
+
+    # left neighbor
+    if pos[0] != 0:
+        left_pos = (pos[0] - 1, pos[1])
+    else: left_pos = None
+
+    # top neighbor
+    if pos[1] != 0:
+        top_pos = (pos[0], pos[1] - 1)
+    else: top_pos = None
+
+    # right neighbor
+    if pos[0] != (COLS - 1):
+        right_pos = (pos[0] + 1, pos[1])
+    else: right_pos = None
+
+    # bottom neighbor
+    if pos[0] != (ROWS + 1):
+        bottom_pos = (pos[0], pos[1] + 1)
+    else: bottom_pos = None
+    
+    return [left_pos, top_pos, right_pos, bottom_pos]
+
+def get_neighbors(agents, agent):
+
+    positions = get_neighbors_position(agents, agent)
+    
+    neighbors = []
+    for pos in positions:
+        if pos != None:
+            neighbors.append(agents[((ROWS-1)*pos[0])+pos[1]])
+        else: neighbors.append(None)
+
+    return neighbors
+
+def print_agents(agents):
+    for agent in agents:
+        print(agent)
+
+AGENT_NB = ROWS*COLS
+TICKS_SEC = 60
 
 def main():
     gui = GUI()
@@ -156,22 +207,33 @@ def main():
 
     # Create X agents with ordonned values
     # and random position
-    positions = np.arange(AGENT_NB)
-    np.random.shuffle(positions)
-
     agents = AGENT_NB*[None]
-    wanted_result = AGENT_NB*[None]
-    for i in range(AGENT_NB):
-        agents[positions[i]] = Agent(i, positions[i])
-        wanted_result[i] = i
+
+    for i in range(ROWS):
+        for j in range(COLS):
+            agents[(ROWS*i)+j] = Agent(random.choice(COLORS), (i,j))
+
+    # sort in place
+    #agents.sort(key=lambda x: x.position)
+
+    print_agents(agents)
 
     # Infinite loop
     try:
         while True:
-            gui.clearScreen()
-            gui.drawRect((ticks%3, 0), BLUE)
-            gui.update()
+            # update agents
+            for (i, agent) in enumerate(agents):
+                # Check if lower-edge of the array
+                neighbors = get_neighbors(agents, agent)
 
+                agent.update(neighbors)
+
+            # draw
+            gui.clearScreen()
+            for agent in agents:
+                gui.drawRect(agent.position, agent.color)
+            gui.update()
+            
             ticks += 1
 
             # Sleep a bit
