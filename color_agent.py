@@ -1,23 +1,23 @@
 import random
 import itertools
-import numpy as np
 import time
 import sys
 import pygame
+import argparse
+import numpy as np
 from math import sqrt as sqrt
 
-import time
 
 WHITE = 255, 255, 255
 BLACK = 0, 0, 0
 BLUE = 52, 116, 235
 GREEN = 52, 235, 137
 RED = 235, 52, 91
-size = width, height = 1024, 1024
+size = WIDTH, HEIGHT = 1024, 1024
 ROWS = 20
 COLS = 20
-cell_width = (width/COLS)
-cell_height = (height/ROWS)
+cell_width = (WIDTH/COLS)
+cell_height = (HEIGHT/ROWS)
 font_size = 60
 COLORS = [BLUE, GREEN, RED]
 
@@ -46,12 +46,14 @@ class GUI():
         self.screen = pygame.display.set_mode(size)
         self.screen.fill(WHITE)
 
+        '''
         # Horizontal lines
         for i in range(1, ROWS):
-            pygame.draw.line(self.screen, BLACK, [0, (height/ROWS)*i], [width, ((height/ROWS)*i)], ROWS)
+            pygame.draw.line(self.screen, BLACK, [0, int((HEIGHT/ROWS)*i)], [WIDTH, int((HEIGHT/ROWS)*i)], ROWS)
         # Vertical lines
         for i in range(1, COLS):
-            pygame.draw.line(self.screen, BLACK, [(width/COLS)*i, 0], [((width/COLS)*i), height], COLS)
+            pygame.draw.line(self.screen, BLACK, [int((WIDTH/COLS)*i), 0], [int((WIDTH/COLS)*i), HEIGHT], COLS)
+        '''
 
     def clearScreen(self):
         self.screen.fill(WHITE)
@@ -59,11 +61,11 @@ class GUI():
         # Horizontal lines
         for i in range(1, ROWS):
             pygame.draw.line(
-                self.screen, BLACK, [0, int((height/ROWS)*i)], [width, int((height/ROWS)*i)], ROWS)
+                self.screen, BLACK, [0, int((HEIGHT/ROWS)*i)], [WIDTH, int((HEIGHT/ROWS)*i)], ROWS)
         # Vertical lines
         for i in range(1, COLS):
             pygame.draw.line(
-                self.screen, BLACK, [int((width/COLS)*i), 0], [int((width/COLS)*i), height], COLS)
+                self.screen, BLACK, [int((WIDTH/COLS)*i), 0], [int((WIDTH/COLS)*i), HEIGHT], COLS)
 
     def drawRect(self, cell, color, refresh=False):
         pygame.draw.rect(self.screen, color, 
@@ -101,10 +103,10 @@ class GUI():
         # "ask(screen, question) -> answer"
         pygame.font.init()
         self.writeScreen(question, line=line)
-        center_yes_x = width/4
-        center_yes_y = height/4
-        center_no_x = (width/4)*2
-        center_no_y = (height/4)
+        center_yes_x = WIDTH/4
+        center_yes_y = HEIGHT/4
+        center_no_x = (WIDTH/4)*2
+        center_no_y = (HEIGHT/4)
         while running:
             for event in pygame.event.get():
                 # handle MOUSEBUTTONUP
@@ -122,7 +124,7 @@ class GUI():
 
         # render text
         label = myfont.render(txt, 50, (0,200,0))
-        screen.blit(label, ((width/2)-(font_size/3)*len(txt), (height/4)*line))
+        screen.blit(label, ((WIDTH/2)-(font_size/3)*len(txt), (HEIGHT/4)*line))
         self.refresh()
 
     def update(self):
@@ -316,5 +318,17 @@ def main():
     except KeyboardInterrupt:
         print('interrupted!')
 
-if __name__ == "__main__":
+if __name__ == "__main__": 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rows", help="grid number of rows")
+    parser.add_argument("--cols", help="grid number of columns")
+    parser.add_argument("--width", help="window width")
+    parser.add_argument("--height", help="window height")
+    args = parser.parse_args()
+
+    if args.rows != None: ROWS = args.rows
+    if args.cols != None: COLS = args.cols
+    if args.width != None: WIDTH = args.width
+    if args.height != None: HEIGHT = args.height
+
     main()
