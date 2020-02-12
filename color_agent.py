@@ -7,23 +7,6 @@ import argparse
 import numpy as np
 from math import sqrt as sqrt
 
-
-WHITE = 255, 255, 255
-BLACK = 0, 0, 0
-BLUE = 52, 116, 235
-GREEN = 52, 235, 137
-RED = 235, 52, 91
-size = WIDTH, HEIGHT = 1024, 1024
-ROWS = 20
-COLS = 20
-cell_width = (WIDTH/COLS)
-cell_height = (HEIGHT/ROWS)
-font_size = 60
-COLORS = [BLUE, GREEN, RED]
-
-AGENT_NB = ROWS*COLS
-TICKS_SEC = 60
-
 def timeit(method):
     def timed(*args, **kw):
         ts = time.time()
@@ -160,12 +143,14 @@ class Agent:
         # Check left first, because we want
         # to sort in ascending order
         # None means there's no neighbor
+        
         for neighbor in neighbors:
             # First check if we have a same-color neighbor
             if neighbor != None:
                 if neighbor.color == self.color:
                     # same color as a neighbor cell, don't move
                     return
+        
 
         ###### agent need 2 same-color neighbor to not move #####
         '''
@@ -186,8 +171,10 @@ class Agent:
                 return    
 
         ###### swap place with a random, different-color neighbor ######
-        #random.choice([neighbor for neighbor in neighbors if neighbor != None])
-
+        '''
+        chosen = random.choice([neighbor for neighbor in neighbors if neighbor != None])
+        chosen.position, self.position = self.position, chosen.position
+        '''
 
 def get_random_pairs(numbers):
     # Generate all possible non-repeating pairs
@@ -323,15 +310,33 @@ def main():
 
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rows", help="grid number of rows")
-    parser.add_argument("--cols", help="grid number of columns")
-    parser.add_argument("--width", help="window width")
-    parser.add_argument("--height", help="window height")
+    parser.add_argument("--rows", type=int, help="grid number of rows")
+    parser.add_argument("--cols", type=int, help="grid number of columns")
+    parser.add_argument("--width", type=int, help="window width")
+    parser.add_argument("--height", type=int, help="window height")
     args = parser.parse_args()
 
     if args.rows != None: ROWS = args.rows
     if args.cols != None: COLS = args.cols
     if args.width != None: WIDTH = args.width
     if args.height != None: HEIGHT = args.height
+
+    print(args)
+
+    WHITE = 255, 255, 255
+    BLACK = 0, 0, 0
+    BLUE = 52, 116, 235
+    GREEN = 52, 235, 137
+    RED = 235, 52, 91
+    size = WIDTH, HEIGHT = 1024, 1024
+    ROWS = 20
+    COLS = 20
+    cell_width = (WIDTH/COLS)
+    cell_height = (HEIGHT/ROWS)
+    font_size = 60
+    COLORS = [BLUE, GREEN, RED]
+
+    AGENT_NB = ROWS*COLS
+    TICKS_SEC = 60
 
     main()
