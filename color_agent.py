@@ -24,6 +24,19 @@ COLORS = [BLUE, GREEN, RED]
 AGENT_NB = ROWS*COLS
 TICKS_SEC = 60
 
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()        
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % (method.__name__, (te - ts) * 1000))
+        return result    
+    return timed
+
 
 class GUI():
 
@@ -139,6 +152,8 @@ class Agent:
     # neighbor[1] top neighbor
     # neighbor[2] right neighbor
     # neighbor[3] down neighbor
+    # In this method, we can define all sorts of rules to change
+    # the behavior of the agents
     def update(self, neighbors):
         # Check left first, because we want
         # to sort in ascending order
@@ -150,12 +165,27 @@ class Agent:
                     # same color as a neighbor cell, don't move
                     return
 
+        ###### agent need 2 same-color neighbor to not move #####
+        '''
+        same_color_neighbors_count = 0
+        for neighbor in neighbors:
+            # First check if we have a same-color neighbor
+            if neighbor != None:
+                if neighbor.color == self.color:
+                    # same color as a neighbor cell, don't move
+                    same_color_neighbors_count += 1
+                    if same_color_neighbors_count >= 2: return 
+        '''
+
         # If not the case, swap place with the first non-None neighbor
         for neighbor in neighbors:
             if neighbor != None:
                 neighbor.position, self.position = self.position, neighbor.position
-                return
-        
+                return    
+
+        ###### swap place with a random, different-color neighbor ######
+        #random.choice([neighbor for neighbor in neighbors if neighbor != None])
+
 
 def get_random_pairs(numbers):
     # Generate all possible non-repeating pairs
@@ -217,6 +247,21 @@ def arange(agents, agent, neighbors):
 
     return tmp.copy()
 
+#@timeit
+def draw_agents(gui, to_draw):
+    for a in to_draw:
+        if a != None:
+            gui.drawRect(a.position, a.color)
+            gui.drawID(a.position, a.id)
+    gui.update()
+
+#@timeit
+def draw_all_agents(gui, agents):
+    for i in range(ROWS):
+        for j in range(COLS):
+            gui.drawRect(agents[i][j].position, agents[i][j].color)
+            gui.drawID(agents[i][j].position, agents[i][j].id)
+    gui.update()
 
 def main():
     gui = GUI()
@@ -233,6 +278,7 @@ def main():
         for j in range(COLS):
             agents[i][j] = Agent(random.choice(COLORS), (i,j), str((ROWS*i)+j))
 
+    draw_all_agents(gui, agents)
     print_agents(agents)
 
     # Infinite loop
@@ -254,24 +300,13 @@ def main():
 
                     #print_agents(agents)
 
-                    for m in range(ROWS):
-                        for n in range(COLS):
-                            gui.drawRect(agents[m][n].position, agents[m][n].color)
-                            gui.drawID(agents[m][n].position, agents[m][n].id)
-                    gui.update()
+                    # only re-draws current agent and its neighbors
+                    # in case they've changed
+                    # Note: drawing all agents cost ~200ms on i7 @3Ghz
+                    # vs ~4ms with only current agent & neighbors
+                    draw_agents(gui, neighbors + [agents[i][j]])
 
                     #gui.playerInput()
-
-            # draw
-            '''
-            gui.clearScreen()
-            for m in range(ROWS):
-                for n in range(COLS):
-                    gui.drawRect(agents[m][n].position, agents[m][n].color)
-                    gui.drawID(agents[m][n].position, agents[m][n].id)
-            gui.update()
-            '''
-
             #gui.playerInput()
             
             ticks += 1
