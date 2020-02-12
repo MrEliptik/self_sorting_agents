@@ -283,6 +283,9 @@ def main():
     draw_all_agents(gui, agents)
     print_agents(agents)
 
+    # Click to start
+    gui.playerInput()
+
     # Infinite loop
     try:
         while True:
